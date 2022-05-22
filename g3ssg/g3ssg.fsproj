@@ -6,10 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Dice.fs" />
+    <Compile Include="logic\Dice.fs" />
+    <Compile Include="logic\Fuzzy.fs" />
     <Compile Include="AstroMeasurement.fs" />
     <Compile Include="Star.fs" />
-    <Compile Include="Orbit.fs" />
+    <Compile Include="Element.fs" />
     <Compile Include="StarSystem.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

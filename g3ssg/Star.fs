@@ -11,6 +11,10 @@ type Class =
     | II
     | Ia
     | Ib
+type Biozone =
+    | TooClose
+    | Goldilocks
+    | TooFar   | TooFar10
 
 let rec mkType (a:Class): Type =
     match a with
@@ -41,8 +45,9 @@ let rec mkType (a:Class): Type =
             | x when x < 10 -> K
             | _ -> A
 
-let mkClass() =
+let rec mkClass(all:bool) =
     match Dice.d 6 3 with
+    | a when a < 6 && all = false -> mkClass(all)
     | a when a < 6 -> (Class.D, Type.D)
     | 6 -> (VI, mkType VI)
     | a when a < 18 -> (V, mkType V)
@@ -54,8 +59,17 @@ let mkClass() =
            | a when a < 13 -> (III, mkType III)
            | _ -> (IV, mkType IV)
 
-let rec mkStar'() =
-    let (c, t) = mkClass()
+let rec mkStar'(all:bool) =
+    let bodeC c t =
+        match (c,t) with
+        | (Class.VI, Type.M) -> AU 0.2m
+        | _ -> match Dice.d 3 1 with
+               | 1 -> AU 0.3m
+               | 2 -> AU 0.35m
+               | _ -> AU 0.4m
+    let mutable bC: distance option = None
+    let bD = 0.1m * decimal(Dice.d 6 1) |> AU
+    let (c, t) = mkClass(all)
     let (m, z, i, r, p, n, l) =
         match t with
         | O -> match c with
@@ -113,26 +127,46 @@ let rec mkStar'() =
                | V  -> (0.3m, AU 0.1m, AU_Z, AU_Z, 16, lazy ((Dice.d 6 3)-2), 1)
                | VI -> (0.2m, AU 0.08m, AU_Z, AU_Z, 16, lazy ((Dice.d 6 2)+2), 2)
                | _  -> raise (new System.ArgumentOutOfRangeException("Oops!"))
-        | Type.D -> let (_,_,_,_,_,_,dp,dn,_) = mkStar'()
+        | Type.D -> let (dc,dt,_,_,_,_,dp,dn,_,_,_) = mkStar'(false)
+                    bC <- bodeC dc dt |> Some
                     (0.8m, AU 0.027m, AU_Z, AU_Z, dp, dn, -10)
-    (c, t, m, z, i, r, p, n, l)
+    if bC = None then
+        bC <- bodeC c t |> Some
+    (c, t, m, z, i, r, p, n, l, bC.Value, bD)
 
-let rec mkStar() =
-    let (c, t, m, z, i, r, p, n, l) = mkStar'()
+let rec mkStar(all:bool) =
+    let (c, t, m, z, i, r, p, n, l, bc, bd) = mkStar'(all)
     let hasp = p > 0 && Dice.d 6 3 <= p
-    (c, t, m, z, i, r, (if hasp then n.Force() else 0), l)
+    (c, t, m, z, i, r, (if hasp then n.Force() else 0), l, bc, bd)
 
-type Star(c,t,m,z:distance,i,r,p,l) =
-    private new((c,t,m,z,i,r,p,l)) = Star(c,t,m,z,i,r,p,l)
-    new() = Star(mkStar())
+type Star(c,t,m,z:distance,i,r,p,l, bc, bd) =
+    private new((c,t,m,z,i,r,p,l,bc,bd)) = Star(c,t,m,z,i,r,p,l,bd,bd)
+    new() = Star(mkStar(true))
     member _.size = c
     member _.color = t
-    member _.mass = m
+    member _.mass = Logic.Fuzzy.vp 5 m
     member _.biozone = (z, 1.5m * z)
     member _.innerLimit = i
     member _.radius = r
     member _.numOrbits = p
     member _.LRM = l
     member _.luminosity = (Dice.d 10 1) - 1
+    member _.orbitDist o : distance =
+        match o with
+        | 1 -> bd
+        | 2 -> bd + bc
+        | _ -> bd + (decimal(2.**float(o-2)) * bc)
+    member m.orbitBz o =
+        match o with
+        | a when m.orbitClose a
+            -> TooClose
+        | a when m.orbitGoldilocks a
+            -> Goldilocks
+        | a when m.orbitDist a > 10m * (snd m.biozone)
+            -> TooFar10
+        | _ -> TooFar
+    member m.orbitClose o = m.orbitDist o < fst m.biozone
+    member m.orbitOut o   = m.orbitDist o > snd m.biozone
+    member m.orbitGoldilocks o = not (m.orbitClose o || m.orbitOut o)
     override s.ToString() =
-        $"%A{s.color}%i{s.luminosity} %A{s.size} - SM:%0.1f{s.mass} BZ:{(fst s.biozone).ToString(false)}-{(snd s.biozone)}"
+        $"%A{s.color}%i{s.luminosity} %A{s.size} - SM:%0.3f{s.mass} BZ:{(fst s.biozone).ToString(false)}-{(snd s.biozone)}"

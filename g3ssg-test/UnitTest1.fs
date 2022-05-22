@@ -1,11 +1,16 @@
 module g3ssg_test
 
 open NUnit.Framework
+open Logic
 
-[<SetUp>]
-let Setup () =
-    ()
+[<TestFixture>]
+type AstroMTest () =
+    [<DefaultValue>] val mutable _dist : distance
 
-[<Test>]
-let Test1 () =
-    Assert.Pass()
+    [<SetUp>]
+    member self.Setup () =
+        self._dist <- AU 1m
+
+    [<Test>]
+    member self.Test_AUVariance () =
+        printf "%A %A" self._dist (Fuzzy.vp 10 (distance.extract self._dist))
