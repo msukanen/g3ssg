@@ -1,8 +1,13 @@
 ﻿module rec Star
 open AstroMeasurement
 
-type Type = O | B | A | F | G | K | M | D
-type Class =
+/// <summary>
+/// Star types/color.
+/// </summary>
+type Class = O | B | A | F | G | K | M | D
+/// <summary>
+
+type Type =
     | D
     | VI
     | V
@@ -16,7 +21,7 @@ type Biozone =
     | Goldilocks
     | TooFar   | TooFar10
 
-let rec mkType (a:Class): Type =
+let rec mkType (a:Type): Class =
     match a with
     | VI -> match Dice.d 6 1 with
             | 1 -> G
@@ -30,7 +35,7 @@ let rec mkType (a:Class): Type =
             | 7 -> G
             | 8 -> K
             | _ -> M
-    | D -> Type.D
+    | D -> Class.D
     | _ -> match Dice.d 6 2 with
             | 2 -> match a with
                    | II
@@ -48,7 +53,7 @@ let rec mkType (a:Class): Type =
 let rec mkClass(all:bool) =
     match Dice.d 6 3 with
     | a when a < 6 && all = false -> mkClass(all)
-    | a when a < 6 -> (Class.D, Type.D)
+    | a when a < 6 -> (Type.D, Class.D)
     | 6 -> (VI, mkType VI)
     | a when a < 18 -> (V, mkType V)
     | _ -> match Dice.d 6 3 with
@@ -62,7 +67,7 @@ let rec mkClass(all:bool) =
 let rec mkStar'(all:bool) =
     let bodeC c t =
         match (c,t) with
-        | (Class.VI, Type.M) -> AU 0.2m
+        | (Type.VI, Class.M) -> AU 0.2m
         | _ -> match Dice.d 3 1 with
                | 1 -> AU 0.3m
                | 2 -> AU 0.35m
@@ -127,11 +132,11 @@ let rec mkStar'(all:bool) =
                | V  -> (0.3m, AU 0.1m, AU_Z, AU_Z, 16, lazy ((Dice.d 6 3)-2), 1)
                | VI -> (0.2m, AU 0.08m, AU_Z, AU_Z, 16, lazy ((Dice.d 6 2)+2), 2)
                | _  -> raise (new System.ArgumentOutOfRangeException("Oops!"))
-        | Type.D -> let (dc,dt,_,_,_,_,dp,dn,_,_,_) = mkStar'(false)
-                    bC <- bodeC dc dt |> Some
-                    (0.8m, AU 0.027m, AU_Z, AU_Z, dp, dn, -10)
+        | Class.D -> let (dc,dt,_,_,_,_,dp,dn,_,_,_) = mkStar'(false)
+                     bC <- bodeC dc dt |> Some
+                     (0.8m, AU 0.027m, AU_Z, AU_Z, dp, dn, -10)
     if bC = None then
-        bC <- bodeC c t |> Some
+       bC <- bodeC c t |> Some
     (c, t, m, z, i, r, p, n, l, bC.Value, bD)
 
 let rec mkStar(all:bool) =
@@ -139,8 +144,11 @@ let rec mkStar(all:bool) =
     let hasp = p > 0 && Dice.d 6 3 <= p
     (c, t, m, z, i, r, (if hasp then n.Force() else 0), l, bc, bd)
 
+/// <summary>
+/// Contain star related info.
+/// </summary>
 type Star(c,t,m,z:distance,i,r,p,l, bc, bd) =
-    private new((c,t,m,z,i,r,p,l,bc,bd)) = Star(c,t,m,z,i,r,p,l,bd,bd)
+    private new((c,t,m,z,i,r,p,l,bc,bd)) = Star(c,t,m,z,i,r,p,l,bc,bd)
     new() = Star(mkStar(true))
     member _.size = c
     member _.color = t

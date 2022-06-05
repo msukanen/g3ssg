@@ -17,6 +17,8 @@ let d s n: int =
     | 1 -> n
     | _ -> Seq.sum (rng.GetValues(1, abs s) |> Seq.take (abs n))
 
+let d' s n: decimal = decimal(d s n)
+
 ///<summary>
 /// Probability of 'v'.
 ///</summary>

@@ -8,7 +8,8 @@
   <ItemGroup>
     <Compile Include="logic\Dice.fs" />
     <Compile Include="logic\Fuzzy.fs" />
-    <Compile Include="AstroMeasurement.fs" />
+    <Compile Include="logic\AstroMeasurement.fs" />
+    <Compile Include="logic\TimeMeasurement.fs" />
     <Compile Include="Star.fs" />
     <Compile Include="Element.fs" />
     <Compile Include="StarSystem.fs" />
