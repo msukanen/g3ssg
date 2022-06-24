@@ -8,7 +8,7 @@ type time =
     | Hours of decimal
     | Mins of decimal
     | Secs of decimal
-    /// Equality for all!
+    /// Equality for all - or not... ke-ke-ke...
     override x.Equals o =
         match o with
         | :? time as y ->
@@ -39,6 +39,9 @@ type time =
                 | Mins   z -> compare z (time.toM y |> time.extract)
                 | Secs   z -> compare z (time.toS y |> time.extract)
             | _ -> invalidArg "o" "cannot compare values of wildly different types"
+    /// <summary>
+    /// Convert to Earth-Years.
+    /// </summary>
     static member toE (v:time): time =
         match v with
         | Days x   -> x / 365.2422m |> EYears
@@ -46,13 +49,23 @@ type time =
         | Mins _   -> time.toH v |> time.toE
         | Secs _   -> time.toM v |> time.toE
         | _        -> v
-    static member toD (v:time): time =
+    /// <summary>
+    /// Convert to Days.
+    /// </summary>
+    static member toD (diy:decimal, v:time): time =
         match v with
-        | EYears x -> x * 365.2422m |> Days
+        | EYears x -> x * diy |> Days
         | Hours x  -> x/24m |> Days
-        | Mins _   -> time.toH v |> time.toD
-        | Secs _   -> time.toH v |> time.toD
+        | Mins _   -> time.toD(diy, time.toH v)
+        | Secs _   -> time.toD(diy, time.toH v)
         | _        -> v
+    /// <summary>
+    /// Convert to Days while assuming Earth-Year as year length.
+    /// </summary>
+    static member toD (v:time): time = time.toD (365.2422m, v)
+    /// <summary>
+    /// Convert to Hours.
+    /// </summary>
     static member toH (v:time): time =
         match v with
         | EYears _ -> time.toD v |> time.toH
@@ -60,6 +73,9 @@ type time =
         | Mins x   -> x/60m |> Hours
         | Secs _   -> time.toM v |> time.toH
         | _        -> v
+    /// <summary>
+    /// Convert to Minutes.
+    /// </summary>
     static member toM (v:time): time =
         match v with
         | EYears _ -> time.toH v |> time.toM
@@ -67,6 +83,9 @@ type time =
         | Hours x  -> x*60m |> Mins
         | Secs x   -> x/60m |> Mins
         | _        -> v
+    /// <summary>
+    /// Convert to Seconds.
+    /// </summary>
     static member toS (v:time): time =
         match v with
         | EYears x -> x * 31_556_926.08m |> Secs
@@ -91,6 +110,9 @@ type time =
         | Hours  h -> h + (time.toH b |> time.extract) |> Hours
         | Mins   m -> m + (time.toM b |> time.extract) |> Mins
         | Secs   s -> s + (time.toS b |> time.extract) |> Secs
+    /// <summary>
+    /// Extract raw value.
+    /// </summary>
     static member extract (a:time): decimal =
         match a with
         | EYears e -> e

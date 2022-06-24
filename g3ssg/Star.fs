@@ -2,11 +2,12 @@
 open AstroMeasurement
 
 /// <summary>
-/// Star types/color.
+/// Star classes/color.
 /// </summary>
 type Class = O | B | A | F | G | K | M | D
 /// <summary>
-
+/// Star types/generic sizery.
+/// </summary>
 type Type =
     | D
     | VI
@@ -16,12 +17,17 @@ type Type =
     | II
     | Ia
     | Ib
+/// <summary>
+/// Biozone designators.
+/// </summary>
 type Biozone =
     | TooClose
     | Goldilocks
     | TooFar   | TooFar10
-
-let rec mkType (a:Type): Class =
+/// <summary>
+/// Make star class.
+/// </summary>
+let rec mkClass (a:Type): Class =
     match a with
     | VI -> match Dice.d 6 1 with
             | 1 -> G
@@ -40,33 +46,40 @@ let rec mkType (a:Type): Class =
             | 2 -> match a with
                    | II
                    | III
-                   | IV -> mkType a
+                   | IV -> mkClass a
                    | _ -> O
             | 3 -> match a with
-                   | IV -> mkType a
+                   | IV -> mkClass a
                    | _ -> M
             | 4
             | 5 -> B
             | x when x < 10 -> K
             | _ -> A
-
-let rec mkClass(all:bool) =
+/// <summary>
+/// Make star type and class.
+/// </summary>
+/// <param name="all">Accept all types as result?</param>
+let rec mkTypeClass (all:bool): Type * Class =
     match Dice.d 6 3 with
-    | a when a < 6 && all = false -> mkClass(all)
+    | a when a < 6 && all = false -> mkTypeClass(all)
     | a when a < 6 -> (Type.D, Class.D)
-    | 6 -> (VI, mkType VI)
-    | a when a < 18 -> (V, mkType V)
+    | 6 -> (VI, mkClass VI)
+    | a when a < 18 -> (V, mkClass V)
     | _ -> match Dice.d 6 3 with
            | 3 -> match Dice.d 3 1 with
-                  | 1 -> (Ia, mkType Ia)
-                  | _ -> (Ib, mkType Ib)
-           | 4 -> (II, mkType II)
-           | a when a < 13 -> (III, mkType III)
-           | _ -> (IV, mkType IV)
+                  | 1 -> (Ia, mkClass Ia)
+                  | _ -> (Ib, mkClass Ib)
+           | 4 -> (II, mkClass II)
+           | a when a < 13 -> (III, mkClass III)
+           | _ -> (IV, mkClass IV)
 
+/// <summary>
+/// Make a star's data chunk.
+/// </summary>
+/// <param name="all">Accept all kinds of stars as result?</param>
 let rec mkStar'(all:bool) =
-    let bodeC c t =
-        match (c,t) with
+    let bodeC (t:Type) (c:Class): distance =
+        match (t,c) with
         | (Type.VI, Class.M) -> AU 0.2m
         | _ -> match Dice.d 3 1 with
                | 1 -> AU 0.3m
@@ -74,15 +87,15 @@ let rec mkStar'(all:bool) =
                | _ -> AU 0.4m
     let mutable bC: distance option = None
     let bD = 0.1m * decimal(Dice.d 6 1) |> AU
-    let (c, t) = mkClass(all)
+    let (t, c) = mkTypeClass(all)
     let (m, z, i, r, p, n, l) =
-        match t with
-        | O -> match c with
+        match c with
+        | O -> match t with
                | Ia -> (70m, AU 790m, AU 16m, AU 0.2m, 0, LZY0, -12)
                | Ib -> (60m, AU 630m, AU 13m, AU 0.1m, 0, LZY0, -12)
                | V  -> (50m, AU 500m, AU 10m, AU_Z, 0, LZY0, -9)
                | _  -> raise (new System.ArgumentOutOfRangeException("Oops!"))
-        | B -> match c with
+        | B -> match t with
                | Ia -> (50m, AU 500m, AU 10m, AU 0.2m, 0, LZY0, -10)
                | Ib -> (40m, AU 320m, AU 6.3m, AU 0.1m, 0, LZY0, -10)
                | II -> (35m, AU 250m, AU 5.m, AU 0.1m, 3, lazy ((Dice.d 6 3)+1), -10)
@@ -90,7 +103,7 @@ let rec mkStar'(all:bool) =
                | IV -> (20m, AU 180m, AU 3.8m, AU_Z, 3, lazy ((Dice.d 6 3)+1), -10)
                | V  -> (10m, AU 30m, AU 0.6m, AU_Z, 4, lazy (Dice.d 6 3), -9)
                | _  -> raise (new System.ArgumentOutOfRangeException("Oops!"))
-        | A -> match c with
+        | A -> match t with
                | Ia -> (30m, AU 200m, AU 4m, AU 0.6m, 3, lazy ((Dice.d 6 3)+3), -10)
                | Ib -> (16m, AU 50m, AU 1m, AU 0.2m, 3, lazy ((Dice.d 6 3)+2), -10)
                | II -> (10m, AU 20m, AU 0.4m, AU_Z, 3, lazy ((Dice.d 6 3)+2), -10)
@@ -98,7 +111,7 @@ let rec mkStar'(all:bool) =
                | IV -> (4m, AU 4m, AU_Z, AU_Z, 4, lazy (Dice.d 6 3), -10)
                | V  -> (3m, AU 3.1m, AU_Z, AU_Z, 5, lazy ((Dice.d 6 3)-1), -9)
                | _  -> raise (new System.ArgumentOutOfRangeException("Oops!"))
-        | F -> match c with
+        | F -> match t with
                | Ia -> (15m, AU 200m, AU 4m, AU 0.8m, 4, lazy ((Dice.d 6 3)+3), -10)
                | Ib -> (13m, AU 50m, AU 1m, AU 0.2m, 4, lazy ((Dice.d 6 3)+2), -10)
                | II -> (8m, AU 13m, AU 0.3m, AU_Z, 4, lazy ((Dice.d 6 3)+1), -9)
@@ -106,7 +119,7 @@ let rec mkStar'(all:bool) =
                | IV -> (2.2m, AU 2m, AU_Z, AU_Z, 6, lazy (Dice.d 6 3), -9)
                | V  -> (1.9m, AU 1.6m, AU_Z, AU_Z, 13, lazy ((Dice.d 6 3)-1), -8)
                | _  -> raise (new System.ArgumentOutOfRangeException("Oops!"))
-        | G -> match c with
+        | G -> match t with
                | Ia -> (12m, AU 160m, AU 3.1m, AU 1.4m, 6, lazy ((Dice.d 6 3)+3), -10)
                | Ib -> (10m, AU 50m, AU 1m, AU 0.4m, 6, lazy ((Dice.d 6 3)+2), -10)
                | II -> (6m, AU 13m, AU 0.3m, AU 0.1m, 6, lazy ((Dice.d 6 3)+1), -9)
@@ -115,7 +128,7 @@ let rec mkStar'(all:bool) =
                | V  -> (1.1m, AU 0.8m, AU_Z, AU_Z, 16, lazy ((Dice.d 6 3)-2), 0)
                | VI -> (0.8m, AU 0.5m, AU_Z, AU_Z, 16, lazy ((Dice.d 6 2)+1), 1)
                | _  -> raise (new System.ArgumentOutOfRangeException("Oops!"))
-        | K -> match c with
+        | K -> match t with
                | Ia -> (15m, AU 125m, AU 2.5m, AU 3m, 10, lazy ((Dice.d 6 3)+2), -10)
                | Ib -> (12m, AU 50m, AU 1m, AU 1m, 16, lazy ((Dice.d 6 3)+2), -10)
                | II -> (6m, AU 13m, AU 0.3m, AU 0.2m, 16, lazy ((Dice.d 6 3)+1), -9)
@@ -124,7 +137,7 @@ let rec mkStar'(all:bool) =
                | V  -> (0.9m, AU 0.4375m, AU_Z, AU_Z, 16, lazy ((Dice.d 6 3)-2), 0)
                | VI -> (0.5m, AU 0.2m, AU_Z, AU_Z, 16, lazy ((Dice.d 6 2)+1), 1)
                | _  -> raise (new System.ArgumentOutOfRangeException("Oops!"))
-        | M -> match c with
+        | M -> match t with
                | Ia -> (20m, AU 100m, AU 2m, AU 7m, 16, lazy (Dice.d 6 3), -10)
                | Ib -> (16m, AU 50m, AU 1m, AU 4.2m, 16, lazy (Dice.d 6 3), -10)
                | II -> (8m, AU 16m, AU 0.3m, AU 1.1m, 16, lazy (Dice.d 6 3), -9)
@@ -136,22 +149,26 @@ let rec mkStar'(all:bool) =
                      bC <- bodeC dc dt |> Some
                      (0.8m, AU 0.027m, AU_Z, AU_Z, dp, dn, -10)
     if bC = None then
-       bC <- bodeC c t |> Some
-    (c, t, m, z, i, r, p, n, l, bC.Value, bD)
+       bC <- bodeC t c |> Some
+    (t, c, m, z, i, r, p, n, l, bC.Value, bD)
 
+/// <summary>
+/// Make a star, or rather, data chunk to be fed to Star's constructor.
+/// </summary>
+/// <param name="all">Accept all sorts of stars as result?</param>
 let rec mkStar(all:bool) =
-    let (c, t, m, z, i, r, p, n, l, bc, bd) = mkStar'(all)
+    let (t, c, m, z, i, r, p, n, l, bc, bd) = mkStar'(all)
     let hasp = p > 0 && Dice.d 6 3 <= p
-    (c, t, m, z, i, r, (if hasp then n.Force() else 0), l, bc, bd)
+    (t, c, m, z, i, r, (if hasp then n.Force() else 0), l, bc, bd)
 
 /// <summary>
 /// Contain star related info.
 /// </summary>
-type Star(c,t,m,z:distance,i,r,p,l, bc, bd) =
-    private new((c,t,m,z,i,r,p,l,bc,bd)) = Star(c,t,m,z,i,r,p,l,bc,bd)
+type Star(t:Type,c:Class,m,z:distance,i,r,p,l, bc, bd) =
+    private new((t,c,m,z,i,r,p,l,bc,bd)) = Star(t,c,m,z,i,r,p,l,bc,bd)
     new() = Star(mkStar(true))
-    member _.size = c
-    member _.color = t
+    member _.size = t
+    member _.color = c // 'class', but as class is a reserved word in F# ...
     member _.mass = Logic.Fuzzy.vp 5 m
     member _.biozone = (z, 1.5m * z)
     member _.innerLimit = i

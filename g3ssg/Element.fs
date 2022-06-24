@@ -99,6 +99,16 @@ let private dlen idx rad hlm: time =
     | a when a > 10 -> Dice.d 6 3 |> decimal |> Hours
     | a -> Dice.d 6 (14-a) |> decimal |> Hours
 
+type density =
+    | GasGiant
+    | Silicate
+    | LowIron
+    | MedIron
+    | HiIron
+    | Metallic
+/// <summary>
+/// Hold info about one or other terrestrial-type planet.
+/// </summary>
 type Terrestrial(s:Star, idx:int, rad:distance) =
     inherit Planet(s, idx, rad)
     let mns =
@@ -200,6 +210,9 @@ type GasGiant(s:Star, idx:int, rad:distance, sz:ggsize) =
             | _ -> ()
         ss
 
+    /// <summary>
+    /// CTOR gas giant w/o predefined radius.
+    /// </summary>
     private new(s:Star, idx:int, sz:ggsize) =
         GasGiant(s, idx,
                  (match sz with
@@ -208,6 +221,9 @@ type GasGiant(s:Star, idx:int, rad:distance, sz:ggsize) =
                   | Large  -> Mi 40_000m |> distance.toKm
                   | _      -> Mi 100_000m |> distance.toKm),
                  sz)
+    /// <summary>
+    /// CTOR a completely randomized gas giant.
+    /// </summary>
     new(s:Star, idx:int) =
         let m = match s.color with
                 | Class.M -> -2
@@ -220,11 +236,14 @@ type GasGiant(s:Star, idx:int, rad:distance, sz:ggsize) =
                  | a when a < 9 -> Small
                  | a when a < 13 -> Medium
                  | _ -> Large)
+
     interface IPlanet with
         override _.moons = mns
         override _.lenDay = dlen idx rad (hasLGorBiggerMoon mns)
+    
     override m.ToString() =
         $"orbit #{(m:>IOrbit).index} -> gas giant"
+    
     member _.specialFeatures = spes
 
 /// <summary>
